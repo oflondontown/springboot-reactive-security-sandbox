@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JWT WebFlux Demo</title>
+</head>
+<body>
+<h2>🔐 Login with Login ID</h2>
+<form id="login-form">
+    <label>Login ID:
+        <input type="text" id="login-id" value="alice"/>
+    </label>
+    <button type="submit">Login</button>
+</form>
+<p><strong>JWT Token:</strong> <span id="token-display"></span></p>
+
+<hr>
+
+<h2>🔗 Test Secured REST API</h2>
+<button id="call-hello-api">Call /api/hello</button>
+<br/>
+<button id="call-trade-api">Call /api/hello</button>
+<p><strong>Response:</strong> <span id="api-response"></span></p>
+
+<hr>
+
+<h2>📡 Test WebSocket</h2>
+<button id="connect-ws">Connect WebSocket</button><br><br>
+<input type="text" id="ws-message" placeholder="Type message..." />
+<button id="send-ws">Send</button>
+<p><strong>Messages:</strong></p>
+<pre id="ws-output"></pre>
+
+<script>
+    let token = '';
+    let socket = null;
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const loginId = document.getElementById('login-id').value;
+
+        const res = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'X-Login-Id': loginId
+            }
+        });
+
+        if (!res.ok) {
+            alert('Login failed: ' + res.status);
+            return;
+        }
+
+        token = await res.text();
+        document.getElementById('token-display').innerText = token;
+    });
+
+    document.getElementById('call-hello-api').addEventListener('click', async () => {
+        if (!token) {
+            alert('Please login first.');
+            return;
+        }
+
+        const res = await fetch('/api/hello', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        const text = await res.text();
+        document.getElementById('api-response').innerText = text;
+    });
+
+    document.getElementById('call-trade-api').addEventListener('click', async () => {
+        if (!token) {
+            alert('Please login first.');
+            return;
+        }
+
+        const res = await fetch('/api/trade', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        const responseText = await res.text();
+
+        if(!res.ok) {
+            const msg = `API call failed with status ${res.status} ${res.statusText}: ${responseText}`
+            alert(msg);
+            return;
+        }
+
+        document.getElementById('api-response').innerText = responseText;
+    });
+
+    document.getElementById('connect-ws').addEventListener('click', () => {
+        if (!token) {
+            alert('Please login first.');
+            return;
+        }
+
+        socket = new WebSocket(`ws://${location.host}/ws/secure?token=${token}`);
+
+        socket.onopen = () => {
+            logWsOutput('WebSocket connected');
+        };
+
+        socket.onmessage = (e) => {
+            logWsOutput('Received: ' + e.data);
+        };
+
+        socket.onerror = (e) => {
+            logWsOutput('WebSocket error');
+        };
+
+        socket.onclose = (event) => {
+            const reason = event.readon || "No reason provided";
+            const code = event.code;
+            const wasClean = event.wasClean;
+
+            logWsOutput(`WebSocket closed. wasClean:${wasClean}, reason:${reason}`);
+        };
+    });
+
+    document.getElementById('send-ws').addEventListener('click', () => {
+        const msg = document.getElementById('ws-message').value;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(msg);
+            logWsOutput('Sent: ' + msg);
+        } else {
+            alert('WebSocket is not connected.');
+        }
+    });
+
+    function logWsOutput(message) {
+        const output = document.getElementById('ws-output');
+        output.textContent += message + '\n';
+    }
+</script>
+</body>
+</html>
