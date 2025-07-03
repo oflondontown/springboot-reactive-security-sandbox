@@ -20,6 +20,8 @@
 <button id="call-hello-api">Call /api/request/hello</button>
 <br/>
 <button id="call-trade-api">Call /api/request/trade</button>
+<br/>
+<button id="call-data-api">Call /api/data</button>
 <p><strong>Response:</strong> <span id="api-response"></span></p>
 
 <hr>
@@ -78,6 +80,29 @@
         }
 
         const res = await fetch('/api/request/trade', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        const responseText = await res.text();
+
+        if(!res.ok) {
+            const msg = `API call failed with status ${res.status} ${res.statusText}: ${responseText}`
+            alert(msg);
+            return;
+        }
+
+        document.getElementById('api-response').innerText = responseText;
+    });
+
+    document.getElementById('call-data-api').addEventListener('click', async () => {
+        if (!token) {
+            alert('Please login first.');
+            return;
+        }
+
+        const res = await fetch('/api/data', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
