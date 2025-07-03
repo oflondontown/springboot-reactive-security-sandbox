@@ -97,12 +97,14 @@ public class JwtService {
 
     protected Jws<Claims> parseServiceToken(String token) {
         log.info("Parsing serviceToken: '{}'", token);
-        return Jwts.parserBuilder().setSigningKey(serviceKey).build().parseClaimsJws(token.trim());
+        return Jwts.parserBuilder().setSigningKey(serviceKey).build().parseClaimsJws(token.replaceFirst("^Bearer ", ""));
     }
 
     protected Jws<Claims> parseUserToken(String token) {
         log.info("Parsing userToken: '{}'", token);
-        return Jwts.parserBuilder().setSigningKey(userKey).build().parseClaimsJws(token.trim());
+        return Jwts.parserBuilder().setSigningKey(userKey).build().parseClaimsJws(
+                token.replaceFirst("^Bearer ", "").trim()
+        );
     }
 
 
