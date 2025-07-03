@@ -28,9 +28,10 @@ public class DataServiceController {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader, // user jwt
             @RequestHeader(value = SERVICE_AUTH_HEADER) String serviceJwtToken) {
         final String userToken = authHeader.replace("Bearer ", "");
+        final String serviceToken = serviceJwtToken.replace("Bearer ", "");
 
         // add another validation to verify the service token
-        if(!jwtService.isValidServiceToken(serviceJwtToken, userToken, "WebService")) {
+        if(!jwtService.isValidServiceToken(serviceToken, userToken, "WebService")) {
             return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                     "Invalid Service Token"
             ));

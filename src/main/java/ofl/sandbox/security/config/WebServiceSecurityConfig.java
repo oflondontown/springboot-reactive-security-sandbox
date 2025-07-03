@@ -25,7 +25,7 @@ public class WebServiceSecurityConfig extends CoreSecurityConfig {
                         "/auth/**",
                         "/ws/**",
                         "/static/**",
-                        "/api/login").permitAll()
+                        "/webservice/api/login").permitAll()
                 .anyExchange().authenticated();
     }
 }
