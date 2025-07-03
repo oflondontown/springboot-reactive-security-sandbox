@@ -84,12 +84,14 @@ public class JwtService {
 //    }
 
     public boolean isValidServiceToken(String serviceToken, String userToken, String role) {
-        Jws<Claims> claims = parseServiceToken(serviceToken);
+        Jws<Claims> serviceClaims = parseServiceToken(serviceToken);
 
         String userId = getUserTokenSubject(userToken);
+        log.info("Got {}")
 
-        return claims.getBody().get("role", String.class).equals(role)
-                && claims.getBody().getSubject().equals(userId);
+
+        return serviceClaims.getBody().get("role", String.class).equals(role)
+                && serviceClaims.getBody().getSubject().equals(userId);
     }
 
     public boolean isValidServiceToken(String serviceToken, String role) {

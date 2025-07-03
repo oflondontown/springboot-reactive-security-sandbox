@@ -62,13 +62,12 @@ public class WebServiceController {
     @GetMapping("/data")
     @PreAuthorize("hasAuthority('CAN_TRADE')") // 'hasAuthority' checks GrantedAuthority objects
     public Mono<ResponseEntity<String>> trade(
-            @RequestHeader(value = USER_AUTH_ID_HEADER, required = false) String userId,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         return webClient.post()
                 .uri(dataServiceUrl + "/dataservice/api/data")
                 .header(HttpHeaders.AUTHORIZATION, authHeader) // pass-through the user jwt --- no need to do this with the custom webClientWithJwt()
                 .header(SERVICE_AUTH_HEADER, // and add a service jwt
-                        "Bearer " + jwtService.issueServiceToken(userId))
+                        "Bearer " + jwtService.issueServiceToken(jwtService.getUserTokenSubject(authHeader)))
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(jwt -> ResponseEntity.ok().body(jwt));
