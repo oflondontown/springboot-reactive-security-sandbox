@@ -3,9 +3,13 @@ package ofl.sandbox.security.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -15,42 +19,91 @@ import lombok.Getter;
 @Service
 public class JwtService {
     @Getter
-    private final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final SecretKey userKey;
+    @Getter
+    private final SecretKey serviceKey;
+    private final String serviceId;
+
     private static final long EXPIRATION_MS = 1000 * 60 * 15; // 15 min
 
-    public String generateToken(String username, List<String> entitlements) {
+    private final String userAuthSecretKey;
+
+    public JwtService(
+            @Value("${user-auth.secret.key}") String userAuthSecretKey,
+            @Value("${service-auth.secret.key}") String serviceAuthSecretKey,
+            @Value("${service.id}") String serviceId) {
+        this.userAuthSecretKey = userAuthSecretKey;
+//        this.userKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(userAuthSecretKey));
+//        this.serviceKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(serviceAuthSecretKey));
+        this.userKey = Keys.hmacShaKeyFor(userAuthSecretKey.getBytes(StandardCharsets.UTF_8));
+        this.serviceKey = Keys.hmacShaKeyFor(serviceAuthSecretKey.getBytes(StandardCharsets.UTF_8));
+        this.serviceId = serviceId;
+    }
+
+//    public SecretKey getUserSecret() {
+//        return Keys.hmacShaKeyFor(Base64.getDecoder().decode(userAuthSecretKey));
+//    }
+
+    public String issueUserToken(String username, List<String> entitlements) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("entitlements", entitlements)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .signWith(key)
+                .signWith(userKey, SignatureAlgorithm.HS384)
                 .compact();
     }
 
-    public Jws<Claims> parseToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+
+    /**
+     * generate a system Jwt and include the userId
+     * @param username
+     * @return jwt
+     */
+    public String issueServiceToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("role", serviceId)
+                .setIssuedAt(new Date())
+                .setExpiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(serviceKey, SignatureAlgorithm.HS384)
+                .compact();
     }
 
-    public String getUsername(String token) {
-        return parseToken(token).getBody().getSubject();
+    public String getServiceTokenSubject(String serviceAuthToken) {
+        return parseServiceToken(serviceAuthToken).getBody().getSubject();
     }
 
-    public List<String> getEntitlements(String token) {
-        // FIXME: the unchecked casting from List to List<String> - use ObjectMapper TypeReference
-        return parseToken(token).getBody().get("entitlements", List.class);
+    public String getUserTokenSubject(String userAuthToken) {
+        return parseUserToken(userAuthToken).getBody().getSubject();
+    }
+//
+//    public List<String> getUserEntitlements(String token) {
+//        // FIXME: the unchecked casting from List to List<String> - use ObjectMapper TypeReference
+//        return parseUserToken(token).getBody().get("entitlements", List.class);
+//    }
+
+    public boolean isValidServiceToken(String serviceToken, String userToken, String role) {
+        Jws<Claims> claims = parseServiceToken(serviceToken);
+
+        String userId = getUserTokenSubject(userToken);
+
+        return claims.getBody().get("role", String.class).equals(role)
+                && claims.getBody().getSubject().equals(userId);
     }
 
-    public boolean isTokenValid(String token) {
-        try {
-            List<String> entitlements = getEntitlements(token);
-
-            log.info("Got {} entitlements for {}", entitlements,
-                    getUsername(token));
-            return true;
-        } catch (JwtException e) {
-            return false;
-        }
+    public boolean isValidServiceToken(String serviceToken, String role) {
+        Jws<Claims> claims = parseServiceToken(serviceToken);
+        return claims.getBody().get("role", String.class).equals(role);
     }
+
+    protected Jws<Claims> parseServiceToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(serviceKey).build().parseClaimsJws(token);
+    }
+
+    protected Jws<Claims> parseUserToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(userKey).build().parseClaimsJws(token);
+    }
+
 
 }

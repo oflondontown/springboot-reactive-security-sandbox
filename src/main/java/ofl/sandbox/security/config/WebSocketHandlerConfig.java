@@ -3,6 +3,7 @@ package ofl.sandbox.security.config;
 import ofl.sandbox.security.websocket.AuthenticatedWebSocketHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAd
 import java.util.Map;
 
 @Configuration
+@Profile("webservice")
 public class WebSocketHandlerConfig {
 
     @Bean

@@ -1,12 +1,14 @@
 package ofl.sandbox.security.controller;
         import lombok.extern.slf4j.Slf4j;
+        import org.springframework.context.annotation.Profile;
         import org.springframework.security.access.prepost.PreAuthorize;
         import org.springframework.web.bind.annotation.*;
         import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/request")
+@Profile("webservice")
 public class ApiController {
 
     @GetMapping("/hello")

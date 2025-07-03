@@ -3,6 +3,9 @@ package ofl.sandbox.security.websocket;
 import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
 import ofl.sandbox.security.jwt.JwtService;
+import ofl.sandbox.security.service.UserEntitlementsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.*;
 import reactor.core.publisher.Mono;
@@ -13,26 +16,31 @@ import java.util.Optional;
 
 @Slf4j
 @Component
+@Profile("webservice")
 public class AuthenticatedWebSocketHandler implements WebSocketHandler {
 
     private final JwtService jwtService;
+    private final UserEntitlementsService userEntitlementsService;
 
-    public AuthenticatedWebSocketHandler(JwtService jwtService) {
+    public AuthenticatedWebSocketHandler(@Autowired JwtService jwtService,
+                                         @Autowired UserEntitlementsService userEntitlementsService) {
         this.jwtService = jwtService;
+        this.userEntitlementsService = userEntitlementsService;
     }
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
         URI uri = session.getHandshakeInfo().getUri();
-        Optional<String> tokenOpt = getTokenFromUri(uri);
+        Optional<String> userToken = getTokenFromUri(uri);
 
-        if (tokenOpt.isEmpty()) {
+        if (userToken.isEmpty()) {
             log.error("Token is empty");
             return handleInvalidConnection(session, CloseStatus.BAD_DATA, "Token is empty");
         }
+        String userId = jwtService.getUserTokenSubject(userToken.get());
 
         try {
-            List<String> entitlements = jwtService.getEntitlements(tokenOpt.get());
+            List<String> entitlements = userEntitlementsService.getEntitlements(userId);
 
             if(!entitlements.contains("CAN_CONNECT_WS")) {
                 log.error("Not entitled for WS");
@@ -44,10 +52,9 @@ public class AuthenticatedWebSocketHandler implements WebSocketHandler {
             return session.close(CloseStatus.BAD_DATA);
         }
 
-        String username = jwtService.getUsername(tokenOpt.get());
-        log.info("Sending to {}", username);
+        log.info("Sending to {}", userId);
         return session.send(session.receive()
-                .map(msg -> session.textMessage("Echo from " + username + ": " + msg.getPayloadAsText())));
+                .map(msg -> session.textMessage("Echo from " + userId + ": " + msg.getPayloadAsText())));
     }
 
     private Mono<Void> handleInvalidConnection(WebSocketSession session, CloseStatus closeStatus, String invalidReason) {

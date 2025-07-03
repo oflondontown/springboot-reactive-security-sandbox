@@ -1,0 +1,2 @@
+server.port: 8092
+service.id: "DataService"
