@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/dataservice/api")
 @Profile("dataservice")
 public class DataServiceController {
     private static final String SERVICE_AUTH_HEADER = "x-service-auth";

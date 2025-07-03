@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/auth/api")
 @Profile("auth")
 @Slf4j
 public class AuthServiceController {

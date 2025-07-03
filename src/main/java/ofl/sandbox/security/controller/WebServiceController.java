@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/webservice/api")
 @Profile("webservice")
 @Slf4j
 public class WebServiceController {
@@ -51,7 +51,7 @@ public class WebServiceController {
 //        return Mono.just(ResponseEntity.ok(jwtService.issueUserToken(loginId, List.of("CAN_TRADE"))));
 
         return webClient.post()
-                .uri(authServiceUrl + "/api/token") // request Jwt from Auth Service
+                .uri(authServiceUrl + "/auth/api/token") // request Jwt from Auth Service
                 .header(SERVICE_AUTH_HEADER,
                         "Bearer " + serviceAuthToken)
                 .retrieve()
@@ -65,7 +65,7 @@ public class WebServiceController {
             @RequestHeader(value = USER_AUTH_ID_HEADER, required = false) String userId,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         return webClient.post()
-                .uri(dataServiceUrl + "/api/data")
+                .uri(dataServiceUrl + "/dataservice/api/data")
                 .header(HttpHeaders.AUTHORIZATION, authHeader) // pass-through the user jwt --- no need to do this with the custom webClientWithJwt()
                 .header(SERVICE_AUTH_HEADER, // and add a service jwt
                         "Bearer " + jwtService.issueServiceToken(userId))

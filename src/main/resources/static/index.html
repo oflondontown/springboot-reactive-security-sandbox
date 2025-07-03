@@ -41,7 +41,7 @@
         e.preventDefault();
         const loginId = document.getElementById('login-id').value;
 
-        const res = await fetch('/api/login', {
+        const res = await fetch('/webservice/api/login', {
             method: 'POST',
             headers: {
                 'X-Login-Id': loginId
@@ -63,7 +63,7 @@
             return;
         }
 
-        const res = await fetch('/api/request/hello', {
+        const res = await fetch('/webservice/api/request/hello', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
@@ -79,7 +79,7 @@
             return;
         }
 
-        const res = await fetch('/api/request/trade', {
+        const res = await fetch('/webservice/api/request/trade', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
@@ -102,7 +102,7 @@
             return;
         }
 
-        const res = await fetch('/api/data', {
+        const res = await fetch('/webservice/api/data', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
