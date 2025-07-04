@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -33,8 +32,6 @@ public class JwtService {
             @Value("${service-auth.secret.key}") String serviceAuthSecretKey,
             @Value("${service.id}") String serviceId) {
         this.userAuthSecretKey = userAuthSecretKey;
-//        this.userKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(userAuthSecretKey));
-//        this.serviceKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(serviceAuthSecretKey));
         this.userKey = Keys.hmacShaKeyFor(userAuthSecretKey.getBytes(StandardCharsets.UTF_8));
         this.serviceKey = Keys.hmacShaKeyFor(serviceAuthSecretKey.getBytes(StandardCharsets.UTF_8));
         this.serviceId = serviceId;
@@ -46,11 +43,11 @@ public class JwtService {
 
     public String issueUserToken(String username, List<String> entitlements) {
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("entitlements", entitlements)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .signWith(userKey, SignatureAlgorithm.HS384)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
+                .signWith(userKey, Jwts.SIG.HS384)
                 .compact();
     }
 
@@ -62,20 +59,20 @@ public class JwtService {
      */
     public String issueServiceToken(String username) {
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("role", serviceId)
-                .setIssuedAt(new Date())
-                .setExpiration(Date.from(Instant.now().plusSeconds(300)))
-                .signWith(serviceKey, SignatureAlgorithm.HS384)
+                .issuedAt(new Date())
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(serviceKey, Jwts.SIG.HS384)
                 .compact();
     }
 
     public String getServiceTokenSubject(String serviceAuthToken) {
-        return parseServiceToken(serviceAuthToken).getBody().getSubject();
+        return parseServiceToken(serviceAuthToken).getPayload().getSubject();
     }
 
     public String getUserTokenSubject(String userAuthToken) {
-        return parseUserToken(userAuthToken).getBody().getSubject();
+        return parseUserToken(userAuthToken).getPayload().getSubject();
     }
 //
 //    public List<String> getUserEntitlements(String token) {
@@ -86,24 +83,25 @@ public class JwtService {
     public boolean isValidServiceToken(String serviceToken, String userToken, String role) {
         Jws<Claims> serviceClaims = parseServiceToken(serviceToken);
         String userId = getUserTokenSubject(userToken);
-        return serviceClaims.getBody().get("role", String.class).equals(role)
-                && serviceClaims.getBody().getSubject().equals(userId);
+        return serviceClaims.getPayload().get("role", String.class).equals(role)
+                && serviceClaims.getPayload().getSubject().equals(userId);
     }
 
     public boolean isValidServiceToken(String serviceToken, String role) {
         Jws<Claims> claims = parseServiceToken(serviceToken);
-        return claims.getBody().get("role", String.class).equals(role);
+        return claims.getPayload().get("role", String.class).equals(role);
     }
 
     protected Jws<Claims> parseServiceToken(String token) {
         log.info("Parsing serviceToken: '{}'", token);
-        return Jwts.parserBuilder().setSigningKey(serviceKey).build().parseClaimsJws(token.replaceFirst("^Bearer ", ""));
+        return Jwts.parser().decryptWith(serviceKey).build()
+                .parseSignedClaims(token.replaceFirst("^Bearer ", ""));
     }
 
     protected Jws<Claims> parseUserToken(String token) {
         log.info("Parsing userToken: '{}'", token);
-        return Jwts.parserBuilder().setSigningKey(userKey).build().parseClaimsJws(
-                token.replaceFirst("^Bearer ", "").trim()
+        return Jwts.parser().decryptWith(userKey).build()
+                .parseSignedClaims(token.replaceFirst("^Bearer ", "").trim()
         );
     }
 

@@ -18,8 +18,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
+import org.springframework.web.reactive.socket.client.WebSocketClient;
+import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.http.client.WebsocketClientSpec;
 
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
@@ -28,12 +33,13 @@ import static org.springframework.web.reactive.function.server.ServerResponse.ok
 @EnableWebFlux
 @Configuration
 @ConditionalOnProperty(name = "flux.enabled")
-public class WebClientConfig  implements WebFluxConfigurer {
+public class WebClientConfig implements WebFluxConfigurer {
 
 
     @Bean
     public RouterFunction<ServerResponse> routes() {
         return route()
+                .GET("/helloworld", serverRequest -> ok().body(Flux.just("hello", "world"), String.class))
                 .resources("/**", new ClassPathResource("static/"))
                 .GET(this::isStaticRoute, this::routeToIndexHtml)
                 .POST(this::isStaticRoute, this::routeToIndexHtml)
@@ -104,5 +110,16 @@ public class WebClientConfig  implements WebFluxConfigurer {
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
+    }
+
+    @Bean
+    public WebSocketHandlerAdapter handlerAdapter() {
+        return new WebSocketHandlerAdapter();
+    }
+
+    @Bean
+    public WebSocketClient webSocketClient() {
+        return new ReactorNettyWebSocketClient(
+                HttpClient.create(), WebsocketClientSpec.builder());
     }
 }

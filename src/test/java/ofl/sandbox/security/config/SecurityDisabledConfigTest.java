@@ -1,6 +1,7 @@
 package ofl.sandbox.security.config;
 
 import ofl.sandbox.security.controller.ApiController;
+import ofl.sandbox.security.test.mock.MockRestController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -10,9 +11,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @WebFluxTest
-@ContextConfiguration(classes = {ApiController.class})
+@ContextConfiguration(classes = {MockRestController.class})
 @Import({NoSecurityConfig.class, WebClientConfig.class})
-@ActiveProfiles("webservice")
+@ActiveProfiles("security-disabled-test")
 public class SecurityDisabledConfigTest {
 
     @Autowired
@@ -22,7 +23,8 @@ public class SecurityDisabledConfigTest {
     public void test() {
         webTestClient
                 .get()
-                .uri("/api/request/test")
+                .uri("/test")
+//                .uri("/api/request/test")
                 .exchange()
                 .expectStatus().isOk();
     }
