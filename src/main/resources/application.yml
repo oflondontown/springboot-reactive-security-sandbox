@@ -2,6 +2,7 @@
 service-auth.secret.key:  "an energy field created by all living things. It surrounds us and penetrates us; it binds the galaxy together."
 user-auth.secret.key: "I am one with the Force, and the Force is with me."
 
+flux.enabled: true
 
 logging:
   level:

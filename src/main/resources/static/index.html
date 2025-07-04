@@ -22,6 +22,8 @@
 <button id="call-trade-api">Call /api/request/trade</button>
 <br/>
 <button id="call-data-api">Call /api/data</button>
+<br/>
+<button id="call-hello-notoken-api">Call /api/request/hello with no token</button>
 <p><strong>Response:</strong> <span id="api-response"></span></p>
 
 <hr>
@@ -63,11 +65,18 @@
             return;
         }
 
-        const res = await fetch('/webservice/api/request/hello', {
+        const res = await fetch('/api/request/hello', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
         });
+
+        const text = await res.text();
+        document.getElementById('api-response').innerText = text;
+    });
+
+    document.getElementById('call-hello-notoken-api').addEventListener('click', async () => {
+        const res = await fetch('/api/request/hello');
 
         const text = await res.text();
         document.getElementById('api-response').innerText = text;
@@ -79,7 +88,7 @@
             return;
         }
 
-        const res = await fetch('/webservice/api/request/trade', {
+        const res = await fetch('/api/request/trade', {
             headers: {
                 'Authorization': 'Bearer ' + token
             }
